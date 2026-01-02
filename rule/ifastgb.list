@@ -1,0 +1,10 @@
+# === iFAST GB ===
+DOMAIN-SUFFIX,ifastgb.com
+DOMAIN-SUFFIX,ifastgb.co.uk
+DOMAIN-SUFFIX,ifastglobal.com
+DOMAIN-SUFFIX,ifastcorp.com
+DOMAIN-SUFFIX,ifastfinancial.com
+DOMAIN-SUFFIX,ifastnet.com
+# 登录认证
+DOMAIN-SUFFIX,auth0.com
+DOMAIN-SUFFIX,okta.com
