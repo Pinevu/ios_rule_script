@@ -1,0 +1,39 @@
+#!name=YouTube (Music) Enhance Plus
+#!desc=适用于 YouTube & YouTube Music：去广告 · 后台播放 · 画中画 · 界面净化（脚本自持增强版）
+#!author=Maasea, Pinevu
+#!category=Pinevu
+#!homepage=https://github.com/Pinevu/ios_rule_script/tree/master/external/Surge/YouTubeEnhance
+#!icon=https://raw.githubusercontent.com/Pinevu/ios_rule_script/master/icon/qure/color/YouTube.png
+#!arguments=屏蔽上传按钮:true,屏蔽选段按钮:true,屏蔽Shorts按钮:false,字幕翻译语言:off,启用调试模式:false
+#!arguments-desc=- 屏蔽参数：[true, false] \n- 翻译参数：[语言代码, off]\n\n1. 语言代码遵循 Google Translate Languages Codes，填入 off 时关闭翻译\n2. 开启调试模式用于输出更多日志
+
+# > Note
+# YouTube 画中画和后台播放可在客户端内关闭：
+#   - 设置 -> 播放 -> 画中画
+#   - 设置 -> 后台播放和下载 -> 后台播放
+#
+# > Script
+# 响应脚本自持于本仓库（Script/youtube.response.js，构建 2026-07-19），不随上游变动。
+
+[Rule]
+# 阻断 QUIC（UDP），回落 TCP 以便 MITM 处理请求
+AND,((DOMAIN-SUFFIX,googlevideo.com),(PROTOCOL,UDP)),REJECT
+AND,((DOMAIN,youtubei.googleapis.com),(PROTOCOL,UDP)),REJECT
+
+[URL Rewrite]
+# 视频广告请求：去除 ctier 分层标记
+(^https?:\/\/[\w-]+\.googlevideo\.com\/(?!dclk_video_ads).+?)&ctier=L(&.+?),ctier,(.+) $1$2$3 302
+
+[Script]
+youtube.response = type=http-response,pattern=^https:\/\/youtubei\.googleapis\.com\/(youtubei\/v1\/(browse|next|player|search|reel\/reel_watch_sequence|guide|account\/get_setting|get_watch))(\?(.*))?$,requires-body=1,max-size=-1,binary-body-mode=1,timeout=60,script-path=https://raw.githubusercontent.com/Pinevu/ios_rule_script/master/external/Surge/YouTubeEnhance/Script/youtube.response.js,argument="{"captionLang":"{{{字幕翻译语言}}}","blockUpload":{{{屏蔽上传按钮}}},"blockImmersive":{{{屏蔽选段按钮}}},"blockShorts":{{{屏蔽Shorts按钮}}},"debug":{{{启用调试模式}}}}"
+
+[Map Local]
+# 视频广告流请求拦截（排除 dclk_video_ads / videoplayback 正常路径）
+^https?:\/\/[\w-]+\.googlevideo\.com\/(?!(dclk_video_ads|videoplayback\?)).+&oad data-type=text data=" " status-code=200
+# 广告统计与投放接口拦截
+^https?:\/\/(www|s)\.youtube\.com\/api\/stats\/ads data-type=text data=" " status-code=200
+^https?:\/\/(www|s)\.youtube\.com\/(pagead|ptracking) data-type=text data=" " status-code=200
+^https?:\/\/s\.youtube\.com\/api\/stats\/qoe\?adcontext data-type=text data=" " status-code=200
+
+[MITM]
+hostname = %APPEND% -redirector*.googlevideo.com, *.googlevideo.com, www.youtube.com, s.youtube.com, youtubei.googleapis.com
